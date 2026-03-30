@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TARA – AI Learning Continuum Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="screen-login" class="screen auth-screen active">
+  <div class="auth-bg">
+    <div class="auth-bg-orb o1"></div>
+    <div class="auth-bg-orb o2"></div>
+  </div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌱</div>
+      <div class="auth-logo-text">TAR<span>A</span></div>
+    </div>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">AI Learning Continuum Platform</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="you@example.com" value="student@tara.io"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" value="password"/>
+    </div>
+    <div class="form-group" style="margin-bottom:6px;">
+      <label class="form-label">Login as</label>
+      <select class="form-select" id="login-role">
+        <option value="student">🎓 Student</option>
+        <option value="mentor">🧑‍🏫 Mentor</option>
+        <option value="ngo">🏢 NGO Admin</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+    <div class="auth-switch">Don't have an account? <a onclick="showScreen('register')">Register here</a></div>
+    <div style="margin-top:16px;background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text2);">
+      💡 <strong>Demo:</strong> Select any role and click Sign In to explore that dashboard.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ REGISTER ══════════ -->
+<div id="screen-register" class="screen auth-screen">
+  <div class="auth-bg">
+    <div class="auth-bg-orb o1"></div>
+    <div class="auth-bg-orb o2"></div>
+  </div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌱</div>
+      <div class="auth-logo-text">TAR<span>A</span></div>
+    </div>
+    <div class="auth-title">Create account</div>
+    <div class="auth-sub">Join TARA to start your learning journey</div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" id="reg-name" type="text" placeholder="Arjun Sharma"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="reg-email" type="email" placeholder="you@example.com"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="reg-pass" type="password" placeholder="Create a strong password"/>
+    </div>
+    <div class="form-group" style="margin-bottom:4px;">
+      <label class="form-label">Select Role</label>
+    </div>
+    <div class="role-grid" id="role-grid">
+      <div class="role-card active" onclick="selectRole('student',this)">
+        <div class="r-icon">🎓</div><div class="r-name">Student</div>
+      </div>
+      <div class="role-card" onclick="selectRole('mentor',this)">
+        <div class="r-icon">🧑‍🏫</div><div class="r-name">Mentor</div>
+      </div>
+      <div class="role-card" onclick="selectRole('ngo',this)">
+        <div class="r-icon">🏢</div><div class="r-name">NGO Admin</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doRegister()">Create Account →</button>
+    <div class="auth-switch">Already have an account? <a onclick="showScreen('login')">Sign in</a></div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div id="screen-app" class="screen app-screen">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span style="font-size:20px;">🌱</span> TARA
+      <div class="topbar-logo-dot"></div>
+    </div>
+    <div class="topbar-nav" id="topbar-nav"></div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar" style="background:linear-gradient(135deg,#4f8cff,#6ee7b7);">S</div>
+        <div>
+          <div class="user-name" id="user-name">Student</div>
+          <div class="role-badge role-student" id="role-badge-top">Student</div>
+        </div>
+      </div>
+      <button class="btn-ghost" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="main-content">
+
+    <!-- ── STUDENT PANELS ── -->
+    <div id="panel-student-home" class="panel">
+      <div class="page-header">
+        <div class="page-title">Good morning, <span id="s-username">Arjun</span> 👋</div>
+        <div class="page-sub">You're on a 7-day streak! Keep it up.</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card blue">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-val">7</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-val">82%</div>
+          <div class="stat-label">Avg Score</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon">✅</div>
+          <div class="stat-val">24</div>
+          <div class="stat-label">Tasks Done</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-val">#3</div>
+          <div class="stat-label">Leaderboard</div>
+        </div>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📅</span>Weekly Streak</div>
+          <div class="streak-row">
+            <div class="streak-day done">M</div>
+            <div class="streak-day done">T</div>
+            <div class="streak-day done">W</div>
+            <div class="streak-day done">T</div>
+            <div class="streak-day done">F</div>
+            <div class="streak-day today">S</div>
+            <div class="streak-day empty">S</div>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:var(--text2);">Complete today's tasks to extend your streak!</div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📊</span>Subject Progress</div>
+          <div class="prog-row"><div class="prog-label"><span>Mathematics</span><span>88%</span></div><div class="prog-bar-wrap"><div class="prog-bar" style="width:88%;background:linear-gradient(90deg,#4f8cff,#6ee7b7);"></div></div></div>
+          <div class="prog-row"><div class="prog-label"><span>Physics</span><span>72%</span></div><div class="prog-bar-wrap"><div class="prog-bar" style="width:72%;background:linear-gradient(90deg,#f59e0b,#f472b6);"></div></div></div>
+          <div class="prog-row"><div class="prog-label"><span>Chemistry</span><span>55%</span></div><div class="prog-bar-wrap"><div class="prog-bar" style="width:55%;background:linear-gradient(90deg,#f87171,#f59e0b);"></div></div></div>
+          <div class="prog-row"><div class="prog-label"><span>English</span><span>91%</span></div><div class="prog-bar-wrap"><div class="prog-bar" style="width:91%;background:linear-gradient(90deg,#6ee7b7,#4f8cff);"></div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🎯</span>Today's Tasks</div>
+        <div id="mcq-container"></div>
+      </div>
+    </div>
+
+    <div id="panel-student-dna" class="panel">
+      <div class="page-header">
+        <div class="page-title">Your Learning DNA 🧬</div>
+        <div class="page-sub">AI-powered analysis of your academic strengths and areas to improve</div>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">💪</span>Strengths</div>
+          <div class="dna-grid">
+            <div class="dna-item strong"><div class="dna-item-label">Mathematics</div><div class="dna-item-val" style="color:var(--accent2);">Expert</div></div>
+            <div class="dna-item strong"><div class="dna-item-label">English</div><div class="dna-item-val" style="color:var(--accent2);">Advanced</div></div>
+            <div class="dna-item strong"><div class="dna-item-label">Logical Reasoning</div><div class="dna-item-val" style="color:var(--accent2);">Strong</div></div>
+            <div class="dna-item strong"><div class="dna-item-label">Problem Solving</div><div class="dna-item-val" style="color:var(--accent2);">Strong</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">🎯</span>Areas to Improve</div>
+          <div class="dna-grid">
+            <div class="dna-item weak"><div class="dna-item-label">Chemistry</div><div class="dna-item-val" style="color:var(--danger);">Needs Work</div></div>
+            <div class="dna-item weak"><div class="dna-item-label">Organic Chem</div><div class="dna-item-val" style="color:var(--danger);">Weak</div></div>
+            <div class="dna-item weak"><div class="dna-item-label">Current Affairs</div><div class="dna-item-val" style="color:var(--accent3);">Average</div></div>
+            <div class="dna-item weak"><div class="dna-item-label">Essay Writing</div><div class="dna-item-val" style="color:var(--accent3);">Average</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-16">
+        <div class="card-title"><span class="card-title-icon">💡</span>AI Recommendations</div>
+        <div class="alert-list">
+          <div class="alert-item warn">
+            <div class="alert-icon">📚</div>
+            <div><div class="alert-text">Focus on Organic Chemistry — your score dropped 12% this week. Practice daily MCQs on reaction mechanisms.</div><div class="alert-time">Suggested by TARA AI</div></div>
+          </div>
+          <div class="alert-item warn">
+            <div class="alert-icon">📰</div>
+            <div><div class="alert-text">Read one current affairs article daily. Enable daily news digest in notifications.</div><div class="alert-time">Suggested by TARA AI</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🎖️</span>Badges Earned</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;text-align:center;"><div style="font-size:28px;">🔥</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">7-Day Streak</div></div>
+          <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;text-align:center;"><div style="font-size:28px;">🥇</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">Math Master</div></div>
+          <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;text-align:center;"><div style="font-size:28px;">⚡</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">Fast Learner</div></div>
+          <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;text-align:center;opacity:0.4;"><div style="font-size:28px;">🏆</div><div style="font-size:11px;color:var(--text2);margin-top:4px;">Top Ranker</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-student-career" class="panel">
+      <div class="page-header">
+        <div class="page-title">Career Exploration 🚀</div>
+        <div class="page-sub">Discover career paths based on your Learning DNA</div>
+      </div>
+      <div class="career-grid">
+        <div class="career-card" onclick="showCareerDetail('MPC')">
+          <div class="career-icon">🔢</div>
+          <div class="career-name">MPC</div>
+          <div class="career-desc">Maths, Physics, Chemistry</div>
+          <div style="margin-top:8px;font-size:11px;background:rgba(79,140,255,0.12);color:var(--accent);padding:3px 8px;border-radius:20px;display:inline-block;">⭐ Best Match</div>
+        </div>
+        <div class="career-card" onclick="showCareerDetail('BiPC')">
+          <div class="career-icon">🧬</div>
+          <div class="career-name">BiPC</div>
+          <div class="career-desc">Biology, Physics, Chemistry</div>
+        </div>
+        <div class="career-card" onclick="showCareerDetail('Civils')">
+          <div class="career-icon">🏛️</div>
+          <div class="career-name">Civil Services</div>
+          <div class="career-desc">IAS, IPS, IFS</div>
+        </div>
+        <div class="career-card" onclick="showCareerDetail('Commerce')">
+          <div class="career-icon">💼</div>
+          <div class="career-name">Commerce</div>
+          <div class="career-desc">CA, MBA, Finance</div>
+        </div>
+        <div class="career-card" onclick="showCareerDetail('Arts')">
+          <div class="career-icon">🎨</div>
+          <div class="career-name">Arts & Humanities</div>
+          <div class="career-desc">Literature, History, Law</div>
+        </div>
+        <div class="career-card" onclick="showCareerDetail('Tech')">
+          <div class="career-icon">💻</div>
+          <div class="career-name">Technology</div>
+          <div class="career-desc">CS, AI, Data Science</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MENTOR PANELS ── -->
+    <div id="panel-mentor-home" class="panel">
+      <div class="page-header">
+        <div class="page-title">Mentor Dashboard 🧑‍🏫</div>
+        <div class="page-sub">Monitor and guide your assigned students</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card blue"><div class="stat-icon">👥</div><div class="stat-val">8</div><div class="stat-label">My Students</div></div>
+        <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-val">6</div><div class="stat-label">Active Today</div></div>
+        <div class="stat-card amber"><div class="stat-icon">⚠️</div><div class="stat-val">2</div><div class="stat-label">Need Attention</div></div>
+        <div class="stat-card pink"><div class="stat-icon">📈</div><div class="stat-val">74%</div><div class="stat-label">Avg Score</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">👥</span>Assigned Students</div>
+          <div class="student-list" id="mentor-student-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">⚠️</span>AI Alerts</div>
+          <div class="alert-list">
+            <div class="alert-item"><div class="alert-icon">🔴</div><div><div class="alert-text"><strong>Priya M.</strong> scored 32% in Chemistry — below threshold. Immediate intervention needed.</div><div class="alert-time">Today, 9:41 AM</div></div></div>
+            <div class="alert-item warn"><div class="alert-icon">🟡</div><div><div class="alert-text"><strong>Rahul K.</strong> inactive for 4 days. Needs motivation check-in.</div><div class="alert-time">Yesterday</div></div></div>
+            <div class="alert-item warn"><div class="alert-icon">🟡</div><div><div class="alert-text"><strong>Sneha P.</strong> struggling with Organic Chemistry. Suggest additional resources.</div><div class="alert-time">2 days ago</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-mentor-progress" class="panel">
+      <div class="page-header">
+        <div class="page-title">Student Progress 📈</div>
+        <div class="page-sub">Detailed performance breakdown across all subjects</div>
+      </div>
+      <div class="card mb-16">
+        <div class="card-title"><span class="card-title-icon">📊</span>Class Performance Overview</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Stage</th><th>Math</th><th>Science</th><th>English</th><th>Streak</th><th>Status</th></tr></thead>
+            <tbody id="progress-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">✍️</span>Suggest Task to Student</div>
+        <div class="suggest-input">
+          <select class="form-select" id="suggest-student" style="max-width:200px;">
+            <option>Select Student</option>
+            <option>Arjun Sharma</option>
+            <option>Priya Mehta</option>
+            <option>Rahul Kumar</option>
+            <option>Sneha Patel</option>
+          </select>
+          <input id="suggest-task-input" placeholder="Type task or topic to practice…" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;font-family:'DM Sans',sans-serif;"/>
+          <button onclick="suggestTask()" style="padding:10px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;font-family:'Sora',sans-serif;font-weight:600;">Send</button>
+        </div>
+        <div id="suggest-confirm" style="display:none;background:rgba(110,231,183,0.1);border:1px solid var(--accent2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent2);">✅ Task suggestion sent successfully!</div>
+      </div>
+    </div>
+
+    <!-- ── NGO PANELS ── -->
+    <div id="panel-ngo-home" class="panel">
+      <div class="page-header">
+        <div class="page-title">NGO Dashboard 🏢</div>
+        <div class="page-sub">Platform-wide analytics and impact monitoring</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card blue"><div class="stat-icon">🎓</div><div class="stat-val">248</div><div class="stat-label">Total Students</div></div>
+        <div class="stat-card green"><div class="stat-icon">🟢</div><div class="stat-val">179</div><div class="stat-label">Active (7d)</div></div>
+        <div class="stat-card amber"><div class="stat-icon">🧑‍🏫</div><div class="stat-val">22</div><div class="stat-label">Mentors</div></div>
+        <div class="stat-card pink"><div class="stat-icon">⚠️</div><div class="stat-val">18</div><div class="stat-label">At Risk</div></div>
+      </div>
+      <div class="analytics-row">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📊</span>Weekly Activity (last 8 weeks)</div>
+          <div class="chart-placeholder" id="bar-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">🍩</span>Student Stages</div>
+          <div class="donut-wrap">
+            <div class="donut"></div>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent2);"></div>Higher (68%)</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent3);"></div>Intermediate (17%)</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--danger);"></div>UG (15%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🏆</span>Top Performing Students</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rank</th><th>Student</th><th>Stage</th><th>Score</th><th>Streak</th><th>Mentor</th></tr></thead>
+            <tbody>
+              <tr><td>🥇 1</td><td>Ananya R.</td><td>Intermediate</td><td><span style="color:var(--accent2);">96%</span></td><td>🔥 21d</td><td>Dr. Meera S.</td></tr>
+              <tr><td>🥈 2</td><td>Vikram P.</td><td>Higher</td><td><span style="color:var(--accent2);">94%</span></td><td>🔥 18d</td><td>Mr. Ravi K.</td></tr>
+              <tr><td>🥉 3</td><td>Arjun S.</td><td>Higher</td><td><span style="color:var(--accent);">82%</span></td><td>🔥 7d</td><td>Mr. Ravi K.</td></tr>
+              <tr><td>4</td><td>Pooja M.</td><td>UG</td><td><span style="color:var(--accent);">79%</span></td><td>🔥 5d</td><td>Dr. Meera S.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-ngo-risk" class="panel">
+      <div class="page-header">
+        <div class="page-title">At-Risk Students ⚠️</div>
+        <div class="page-sub">AI-detected students who need immediate intervention</div>
+      </div>
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-title" style="color:var(--danger);">🔴 High Risk (Score &lt; 40%)</div>
+          <div class="student-list" id="risk-high-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--accent3);">🟡 Inactive (&gt; 3 days)</div>
+          <div class="student-list" id="risk-inactive-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📋</span>All At-Risk Students</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Student</th><th>Stage</th><th>Score</th><th>Last Active</th><th>Risk Reason</th><th>Assigned Mentor</th></tr></thead>
+            <tbody id="risk-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-ngo-mentors" class="panel">
+      <div class="page-header">
+        <div class="page-title">Mentors Overview 🧑‍🏫</div>
+        <div class="page-sub">All registered mentors and their student assignments</div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mentor</th><th>Specialization</th><th>Students</th><th>Avg Student Score</th><th>Active This Week</th></tr></thead>
+            <tbody>
+              <tr><td>Dr. Meera Sharma</td><td>Science</td><td>12</td><td><span style="color:var(--accent2);">88%</span></td><td><span class="risk-tag risk-ok">Active</span></td></tr>
+              <tr><td>Mr. Ravi Kumar</td><td>Mathematics</td><td>10</td><td><span style="color:var(--accent2);">85%</span></td><td><span class="risk-tag risk-ok">Active</span></td></tr>
+              <tr><td>Ms. Pritha Das</td><td>English</td><td>8</td><td><span style="color:var(--accent);">76%</span></td><td><span class="risk-tag risk-ok">Active</span></td></tr>
+              <tr><td>Mr. Suresh Nair</td><td>Social Studies</td><td>7</td><td><span style="color:var(--accent3);">61%</span></td><td><span class="risk-tag risk-med">Low</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /screen-app -->
+
+<!-- ══════════ TARA BOT ══════════ -->
+<button id="tara-btn" onclick="toggleTara()">
+  <div class="tara-face" id="tara-face">
+    <div class="tara-eye left" id="eye-l"></div>
+    <div class="tara-eye right" id="eye-r"></div>
+    <div class="tara-mouth" id="tara-mouth"></div>
+  </div>
+</button>
+
+<div id="tara-chat">
+  <div class="tara-header">
+    <div class="tara-header-face">🤖</div>
+    <div class="tara-header-info">
+      <div class="name">TARA Bot</div>
+      <div class="status">● Online — AI Learning Assistant</div>
+    </div>
+  </div>
+  <div class="tara-msgs" id="tara-msgs">
+    <div class="msg bot">Hi! I'm TARA 👋 Your AI learning companion. How can I help you today?</div>
+    <div class="msg bot">You can ask me about your progress, weak topics, career advice, or anything else!</div>
+  </div>
+  <div class="tara-input-row">
+    <input class="tara-input" id="tara-input" placeholder="Ask TARA anything…" onkeypress="if(event.key==='Enter')sendTara()"/>
+    <button class="tara-send" onclick="sendTara()">➤</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">✅ <span id="toast-msg">Done!</span></div>
+<script src="script.js"></script>
+</body>
+</html>
