@@ -1,0 +1,41 @@
+# Secrets and Environment Variables
+.env
+.env.local
+.env.*.local
+config.py  # Only if you have secrets hardcoded here
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node / Frontend
+node_modules/
+/dist
+/build
+.eslintcache
+.stylelintcache
+*.log
+
+# OS Specific
+.DS_Store
+Thumbs.db

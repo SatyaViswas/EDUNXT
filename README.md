@@ -1,2 +1,1 @@
-# EDUNXT
-Education Equity and Learning Support
+# EDUNXT2
