@@ -101,9 +101,26 @@ def _safe_generate_json(prompt: str, model: str = "gemini-2.5-flash") -> Optiona
 # EXPORTED FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_career_recommendations(learning_dna: LearningDNA, standard: int) -> Optional[CareerRecommendationResponse]:
-    if standard < 8: return None
-    prompt = f"Analyze Grade {standard} DNA: {learning_dna.dict()}. Return career JSON."
+def get_career_recommendations(
+    learning_dna: LearningDNA,
+    standard: int,
+    student_name: Optional[str] = None,
+) -> Optional[CareerRecommendationResponse]:
+    if standard < 8:
+        return None
+
+    stage = "HighSchool" if 8 <= standard <= 10 else "Undergrad"
+    prompt = (
+        f"Based on this Grade {standard} student with DNA {learning_dna.model_dump()}, "
+        f"recommend 3 {stage} streams. Explain why based on their specific cognitive strengths. "
+        "Return STRICT JSON with keys: student_standard, primary_recommendation, "
+        "secondary_recommendations, overall_profile, next_steps. "
+        "Each recommendation must include: stream, confidence, why, key_strengths, growth_areas."
+    )
+
+    if student_name:
+        prompt = f"Student name: {student_name}. " + prompt
+
     result = _safe_generate_json(prompt)
     if result:
         return CareerRecommendationResponse(**result)

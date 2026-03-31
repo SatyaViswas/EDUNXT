@@ -57,6 +57,8 @@ type AuthMode = 'login' | 'register';
 const AUTH_REGISTER_URL = 'http://localhost:8000/auth/register';
 const AUTH_LOGIN_URL = 'http://localhost:8000/auth/login';
 
+const STUDENT_GRADE_OPTIONS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+
 type AuthResponse = {
   access_token: string;
   token_type: string;
@@ -79,7 +81,7 @@ const LoginPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [standard, setStandard] = useState('8');
+  const [standard, setStandard] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useUser();
@@ -112,6 +114,9 @@ const LoginPage: React.FC = () => {
           role: selectedRole,
         };
         if (selectedRole === 'Student') {
+          if (!standard) {
+            throw new Error('Please select your grade before signing up.');
+          }
           registerPayload.standard = Number(standard);
         }
 
@@ -303,16 +308,21 @@ const LoginPage: React.FC = () => {
               required
             />
             {authMode === 'register' && selectedRole === 'Student' && (
-              <input
+              <select
                 className="md:col-span-2 rounded-lg bg-slate-900/70 border border-white/10 px-3 py-2 text-white"
-                placeholder="Standard (1-12)"
-                type="number"
-                min={1}
-                max={12}
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
                 required
-              />
+              >
+                <option value="" disabled>
+                  Select Grade (Class 1-12)
+                </option>
+                {STUDENT_GRADE_OPTIONS.map((grade) => (
+                  <option key={grade} value={grade}>
+                    Grade {grade}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 

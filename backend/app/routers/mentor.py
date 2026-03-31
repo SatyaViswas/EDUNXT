@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, text
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -35,10 +35,12 @@ router = APIRouter(prefix="/mentor", tags=["mentor"])
 class StudentInBatch(BaseModel):
     """Student information for a batch."""
     student_id: uuid.UUID
+    batch_name: str
     name: str
     email: str
     standard: int
     current_streak: int
+    attendance_rate: float = 0.0
     learning_dna: Dict[str, float]
     mastery_level: float = 0.0
     is_at_risk: bool = False
@@ -110,6 +112,8 @@ class MentorStatsResponse(BaseModel):
     pending_assignments: int
     open_issues: int
     unresolved_issues: int
+    at_risk_count: int
+    batch_averages: Dict[str, Dict[str, float]]
 
 
 class AssignmentCreateRequest(BaseModel):
@@ -144,6 +148,20 @@ class StudentIssueResponse(BaseModel):
     severity: str = "Medium"
     status: str
     created_at: datetime
+
+
+class AttendanceUpdateRequest(BaseModel):
+    student_id: uuid.UUID
+    present: bool
+
+
+class AttendanceUpdateResponse(BaseModel):
+    student_id: uuid.UUID
+    date: str
+    present: bool
+    attendance_rate: float
+    total_days: int
+    present_days: int
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -219,6 +237,55 @@ def _get_or_create_batch(
     return batch
 
 
+def _extract_learning_dna(student_profile: StudentProfile) -> Dict[str, float]:
+    dna_json = student_profile.learning_dna or {}
+
+    def pick(field_name: str) -> float:
+        explicit_value = getattr(student_profile, field_name, None)
+        if explicit_value is not None:
+            return float(explicit_value)
+        return float(dna_json.get(field_name, 50.0))
+
+    return {
+        "logical": pick("logical"),
+        "verbal": pick("verbal"),
+        "creative": pick("creative"),
+        "visual_spatial": pick("visual_spatial"),
+        "memory": pick("memory"),
+        "pattern": pick("pattern"),
+    }
+
+
+def _clamp_attendance_rate(raw_rate: float) -> float:
+    return round(max(0.0, min(100.0, float(raw_rate))), 2)
+
+
+def _get_attendance_rate(student_profile: StudentProfile) -> float:
+    dna = student_profile.learning_dna or {}
+    total_days = int(dna.get("attendance_total_days", 0) or 0)
+    present_days = int(dna.get("attendance_present_days", 0) or 0)
+
+    # Prefer deriving from raw counters when present to avoid stale inverted rates.
+    if total_days > 0:
+        return _calculate_attendance_rate(total_days, present_days)
+
+    if "attendance_rate" in dna:
+        return _clamp_attendance_rate(float(dna.get("attendance_rate", 0.0)))
+
+    direct_rate = getattr(student_profile, "attendance_rate", None)
+    if direct_rate is not None:
+        return _clamp_attendance_rate(float(direct_rate))
+
+    return 0.0
+
+
+def _calculate_attendance_rate(total_logged_days: int, total_present_days: int) -> float:
+    if total_logged_days <= 0:
+        return 0.0
+    normalized_present = max(0, min(int(total_present_days), int(total_logged_days)))
+    return round((normalized_present / total_logged_days) * 100.0, 2)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /mentor/batches
 # ─────────────────────────────────────────────────────────────────────────────
@@ -271,10 +338,12 @@ def get_mentor_batches(
         grouped_students.setdefault(b_name, []).append(
             StudentInBatch(
                 student_id=student_user.id,
+                batch_name=b_name,
                 name=student_user.full_name,
                 email=student_user.email,
                 standard=student_profile.standard,
                 current_streak=student_profile.current_streak,
+                attendance_rate=_get_attendance_rate(student_profile),
                 learning_dna={
                     "logical": float((student_profile.learning_dna or {}).get("logical", 50.0)),
                     "verbal": float((student_profile.learning_dna or {}).get("verbal", 50.0)),
@@ -374,7 +443,7 @@ def get_mentor_students(
     for batch_name in batch_names:
         grouped.setdefault(batch_name, [])
         for student_user, student_profile in student_rows_by_batch.get(batch_name, []):
-            dna = student_profile.learning_dna or {}
+            dna = _extract_learning_dna(student_profile)
             logical = float(dna.get("logical", 50.0))
             verbal = float(dna.get("verbal", 50.0))
             creative = float(dna.get("creative", 50.0))
@@ -390,10 +459,12 @@ def get_mentor_students(
             grouped[batch_name].append(
                 StudentInBatch(
                     student_id=student_user.id,
+                    batch_name=_normalize_batch_name(student_profile.batch_name or batch_name),
                     name=student_user.full_name,
                     email=student_user.email,
                     standard=student_profile.standard,
                     current_streak=student_profile.current_streak,
+                    attendance_rate=_get_attendance_rate(student_profile),
                     learning_dna={
                         "logical": logical,
                         "verbal": verbal,
@@ -418,6 +489,101 @@ def get_mentor_students(
             )
 
     return grouped
+
+
+@router.post(
+    "/attendance",
+    response_model=AttendanceUpdateResponse,
+    summary="Log student attendance and recalculate attendance rate"
+)
+def log_student_attendance(
+    payload: AttendanceUpdateRequest,
+    current_user: User = Depends(get_current_active_mentor),
+    db: Session = Depends(get_db),
+) -> AttendanceUpdateResponse:
+    mentor_batches = db.query(Batch).filter(Batch.mentor_id == current_user.id).all()
+    batch_names = [batch.batch_name for batch in mentor_batches if batch.batch_name]
+    if not batch_names:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No assigned batches found for mentor",
+        )
+
+    student_profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.user_id == payload.student_id)
+        .first()
+    )
+    if not student_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student profile not found",
+        )
+
+    student_batch_name = _normalize_batch_name(student_profile.batch_name or "")
+    if student_batch_name not in batch_names:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student is not in your assigned batches",
+        )
+
+    dna = dict(student_profile.learning_dna or {})
+    attendance_log = dict(dna.get("attendance_log", {}))
+    today = datetime.now(timezone.utc).date().isoformat()
+
+    previous_mark = attendance_log.get(today)
+    attendance_log[today] = bool(payload.present)
+
+    total_days = int(dna.get("attendance_total_days", 0) or 0)
+    present_days = int(dna.get("attendance_present_days", 0) or 0)
+
+    if previous_mark is None:
+        total_days += 1
+        if payload.present:
+            present_days += 1
+    elif bool(previous_mark) != bool(payload.present):
+        if payload.present:
+            present_days += 1
+        else:
+            present_days = max(0, present_days - 1)
+
+    attendance_rate = _calculate_attendance_rate(total_days, present_days)
+
+    dna["attendance_log"] = attendance_log
+    dna["attendance_total_days"] = total_days
+    dna["attendance_present_days"] = present_days
+    dna["attendance_rate"] = attendance_rate
+    student_profile.learning_dna = dna
+
+    attendance_column_exists = db.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_name = 'student_profiles' AND column_name = 'attendance_rate'
+            """
+        )
+    ).scalar()
+
+    if attendance_column_exists:
+        db.execute(
+            text("UPDATE student_profiles SET attendance_rate = :rate WHERE user_id = :student_id"),
+            {"rate": attendance_rate, "student_id": str(payload.student_id)},
+        )
+    elif hasattr(student_profile, "attendance_rate"):
+        setattr(student_profile, "attendance_rate", attendance_rate)
+
+    db.add(student_profile)
+    db.commit()
+
+    return AttendanceUpdateResponse(
+        student_id=payload.student_id,
+        date=today,
+        present=payload.present,
+        attendance_rate=attendance_rate,
+        total_days=total_days,
+        present_days=present_days,
+    )
 
 
 @router.patch(
@@ -577,6 +743,8 @@ def get_mentor_stats(
             pending_assignments=0,
             open_issues=0,
             unresolved_issues=0,
+            at_risk_count=0,
+            batch_averages={},
         )
 
     total_students = (
@@ -605,12 +773,58 @@ def get_mentor_stats(
         or 0
     )
 
+    student_profiles = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.batch_name.in_(batch_names))
+        .all()
+    )
+
+    batch_averages: Dict[str, Dict[str, float]] = {}
+    at_risk_count = 0
+
+    profiles_by_batch: Dict[str, List[StudentProfile]] = {}
+    for profile in student_profiles:
+        b_name = _normalize_batch_name(profile.batch_name or "")
+        profiles_by_batch.setdefault(b_name, []).append(profile)
+
+    for batch_name in batch_names:
+        profiles = profiles_by_batch.get(batch_name, [])
+        if not profiles:
+            batch_averages[batch_name] = {
+                "average_attendance": 0.0,
+                "student_count": 0.0,
+            }
+            continue
+
+        attendance_values = [_get_attendance_rate(profile) for profile in profiles]
+        avg_attendance = round(sum(attendance_values) / len(attendance_values), 2)
+        batch_averages[batch_name] = {
+            "average_attendance": avg_attendance,
+            "student_count": float(len(profiles)),
+        }
+
+        for profile in profiles:
+            dna = _extract_learning_dna(profile)
+            avg_dna = (
+                dna["logical"]
+                + dna["verbal"]
+                + dna["creative"]
+                + dna["visual_spatial"]
+                + dna["memory"]
+                + dna["pattern"]
+            ) / 6.0
+            attendance_rate = _get_attendance_rate(profile)
+            if attendance_rate < 75 or profile.current_streak <= 1 or avg_dna < 45:
+                at_risk_count += 1
+
     return MentorStatsResponse(
         total_students=int(total_students),
         active_batches=int(active_batches),
         pending_assignments=int(pending_assignments),
         open_issues=int(open_issues),
         unresolved_issues=int(open_issues),
+        at_risk_count=int(at_risk_count),
+        batch_averages=batch_averages,
     )
 
 

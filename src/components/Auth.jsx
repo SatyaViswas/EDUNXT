@@ -9,6 +9,8 @@ const ROLE_OPTIONS = [
   { label: 'NGO', value: 'NGO' },
 ];
 
+const GRADE_OPTIONS = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+
 const ROLE_REDIRECTS = {
   STUDENT: '/student',
   MENTOR: '/mentor',
@@ -23,6 +25,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Student');
+  const [grade, setGrade] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,6 +37,12 @@ export default function Auth() {
     try {
       const url = mode === 'signup' ? `${API_BASE}/auth/register` : `${API_BASE}/auth/login`;
 
+      if (mode === 'signup' && role === 'Student' && !grade) {
+        setError('Please select your grade before signing up.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload =
         mode === 'signup'
           ? {
@@ -41,7 +50,7 @@ export default function Auth() {
               password,
               role,
               full_name: email.split('@')[0] || 'User',
-              ...(role === 'Student' ? { standard: 8 } : {}),
+              ...(role === 'Student' ? { standard: Number(grade) } : {}),
             }
           : {
               email,
@@ -144,6 +153,18 @@ export default function Auth() {
               ))}
             </select>
           </label>
+
+          {mode === 'signup' && role === 'Student' ? (
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 13, color: '#d1d5db' }}>Grade</span>
+              <select value={grade} onChange={(e) => setGrade(e.target.value)} style={inputStyle} required>
+                <option value="" disabled>Select Grade (Class 1-12)</option>
+                {GRADE_OPTIONS.map((g) => (
+                  <option key={g} value={g}>Grade {g}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           {error ? (
             <div style={{
